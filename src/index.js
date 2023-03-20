@@ -2,12 +2,12 @@ const breadCrumb = document.querySelector(".Breadcrumb");
 const nodes = document.querySelector(".Nodes");
 let currDir = [];
 
-async function directFolder(item) {
-    await paintNodes(item.id);
-    await paintBreadCrumb(item.name);
-}
+const directFolder = (item) => {
+  paintBreadCrumb(item.name);
+  paintNodes(item.id);
+};
 
-function resetFolder(parent) {
+const resetFolder = (parent) => {
   while (parent.firstChild) {
     parent.removeChild(parent.firstChild);
   }
@@ -18,25 +18,29 @@ function resetFolder(parent) {
   prevDiv.appendChild(prevIcon);
   parent.appendChild(prevDiv);
   prevDiv.addEventListener("click", () => {
-    currDir.slice(-1);
+    currDir = currDir.slice(0, -1);
+    directFolder();
   });
-}
+};
 
-async function fetchDirectory(nodeId) {
+const fetchDirectory = async (nodeId) => {
   const nodes = document.querySelector(".nodes");
   resetFolder(nodes);
-  const response = await fetch(
-    `https://l9817xtkq3.execute-api.ap-northeast-2.amazonaws.com/dev/${nodeId}`
-  );
-
-  if (response.status >= 200 && response.status <= 299) {
-    return response.json();
-  } else {
-    console.log(response.status, response.statusText);
+  try {
+    const response = await fetch(
+      `https://l9817xtkq3.execute-api.ap-northeast-2.amazonaws.com/dev/${
+        nodeId ? nodeId : ""
+      }`
+    );
+    if (!response.ok) {
+      throw new Error("Server has error.");
+    }
+  } catch (e) {
+    throw new Error(`Something went wrong! ${e.message}`);
   }
-}
+};
 
-async function openImgModal(id, filePath) {
+const openImgModal = async (id, filePath) => {
   const modal = document.createElement("div");
   modal.className = "Modal ImageViewer";
   const imgBox = document.createElement("img");
@@ -53,17 +57,17 @@ async function openImgModal(id, filePath) {
 
   setTimeout(() => {
     window.addEventListener("click", (event) => {
-        console.log(event.currentTarget)
-        console.log("PRENT", event.currentTarget.className);
-        console.log("moidal", modal);
+      console.log(event.currentTarget);
+      console.log("PRENT", event.currentTarget.className);
+      console.log("moidal", modal);
       if (event.currentTarget.className !== "Modal ImageViewer") {
         modal.remove();
       }
     });
   }, 0);
-}
+};
 
-async function paintNodes(nodeId) {
+const paintNodes = async (nodeId) => {
   const getContents = await fetchDirectory(nodeId);
   getContents.map((item) => {
     if (item.type == "DIRECTORY") {
@@ -92,15 +96,15 @@ async function paintNodes(nodeId) {
       nodes.appendChild(fileDiv);
     }
   });
-}
+};
 
-async function resetBreadCrumb() {
+const resetBreadCrumb = async () => {
   while (breadCrumb.firstChild) {
     breadCrumb.removeChild(breadCrumb.firstChild);
   }
-}
+};
 
-async function paintBreadCrumb(dir) {
+const paintBreadCrumb = async (dir) => {
   await resetBreadCrumb();
   currDir.push(dir);
   for (let i = 0; i < currDir.length; i++) {
@@ -108,7 +112,7 @@ async function paintBreadCrumb(dir) {
     dirDiv.innerHTML = currDir[i];
     breadCrumb.appendChild(dirDiv);
   }
-}
+};
 
 window.onload = () => {
   paintBreadCrumb("root");
