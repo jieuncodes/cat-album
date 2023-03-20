@@ -2,28 +2,44 @@ const breadCrumb = document.querySelector(".Breadcrumb");
 const nodes = document.querySelector(".Nodes");
 let currDir = [];
 
-const directFolder = (item) => {
-  paintBreadCrumb(item.name);
-  paintNodes(item.id);
-};
+// todo: delete root goback btn
+// todo: loading screen, state
 
-const resetFolder = (parent) => {
-  while (parent.firstChild) {
-    parent.removeChild(parent.firstChild);
+function directFolder(item, goBack) {
+  if (goBack) {
+    currDir = currDir.slice(0, -1);
+  } else {
+    currDir.push({ id: item.id, name: item.name ? item.name : "root" });
+    console.log(currDir);
   }
+  console.log("DIRECTINGFOLDER WITH ", item, "goBack=", goBack);
+  paintBreadCrumb();
+  paintNodes(item ? item.id : null);
+}
+
+function addPrevIcon(parent) {
   const prevDiv = document.createElement("div");
   const prevIcon = document.createElement("img");
   prevIcon.className = "Node";
   prevIcon.src = "../assets/prev.png";
   prevDiv.appendChild(prevIcon);
   parent.appendChild(prevDiv);
+  console.log(currDir);
   prevDiv.addEventListener("click", () => {
-    currDir = currDir.slice(0, -1);
-    directFolder();
+    directFolder(fetchDirectory(currDir[currDir.length - 2].id), true);
   });
-};
+}
 
-const fetchDirectory = async (nodeId) => {
+function resetFolder(parentNode) {
+  while (parentNode.firstChild) {
+    parentNode.removeChild(parentNode.firstChild);
+  }
+  if (currDir.length !== 1) {
+    addPrevIcon(parentNode);
+  }
+}
+
+async function fetchDirectory(nodeId) {
   const nodes = document.querySelector(".nodes");
   resetFolder(nodes);
   try {
@@ -32,15 +48,17 @@ const fetchDirectory = async (nodeId) => {
         nodeId ? nodeId : ""
       }`
     );
+
     if (!response.ok) {
       throw new Error("Server has error.");
     }
+    return response.json();
   } catch (e) {
     throw new Error(`Something went wrong! ${e.message}`);
   }
-};
+}
 
-const openImgModal = async (id, filePath) => {
+async function openImgModal(id, filePath) {
   const modal = document.createElement("div");
   modal.className = "Modal ImageViewer";
   const imgBox = document.createElement("img");
@@ -57,18 +75,15 @@ const openImgModal = async (id, filePath) => {
 
   setTimeout(() => {
     window.addEventListener("click", (event) => {
-      console.log(event.currentTarget);
-      console.log("PRENT", event.currentTarget.className);
-      console.log("moidal", modal);
-      if (event.currentTarget.className !== "Modal ImageViewer") {
+      if (event.target.className !== "Modal ImageViewer") {
         modal.remove();
       }
     });
   }, 0);
-};
+}
 
-const paintNodes = async (nodeId) => {
-  const getContents = await fetchDirectory(nodeId);
+async function paintNodes(nodeId) {
+  const getContents = await fetchDirectory(nodeId ? nodeId : null);
   getContents.map((item) => {
     if (item.type == "DIRECTORY") {
       const dirDiv = document.createElement("div");
@@ -96,25 +111,23 @@ const paintNodes = async (nodeId) => {
       nodes.appendChild(fileDiv);
     }
   });
-};
+}
 
-const resetBreadCrumb = async () => {
+function resetBreadCrumb() {
   while (breadCrumb.firstChild) {
     breadCrumb.removeChild(breadCrumb.firstChild);
   }
-};
+}
 
-const paintBreadCrumb = async (dir) => {
-  await resetBreadCrumb();
-  currDir.push(dir);
+async function paintBreadCrumb() {
+  resetBreadCrumb();
   for (let i = 0; i < currDir.length; i++) {
     const dirDiv = document.createElement("div");
-    dirDiv.innerHTML = currDir[i];
+    dirDiv.innerHTML = currDir[i].name;
     breadCrumb.appendChild(dirDiv);
   }
-};
+}
 
-window.onload = () => {
-  paintBreadCrumb("root");
-  paintNodes("");
+window.onload = async () => {
+  directFolder(await fetchDirectory(), false);
 };
