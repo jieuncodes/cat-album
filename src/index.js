@@ -53,7 +53,6 @@ function resetBreadCrumb() {
 }
 
 async function fetchDirectory(nodeId) {
-  resetFolder(nodes);
   if (dataCache[nodeId || "-1"]) {
     return dataCache[nodeId || "-1"];
   }
@@ -150,6 +149,7 @@ function isLoading(state) {
 
 async function paintNodes(nodeId) {
   isLoading(true);
+  resetFolder(nodes);
   const getContents = await fetchDirectory(nodeId ? nodeId : null);
   getContents.forEach((item) => {
     createNodeElement(item);
