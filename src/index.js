@@ -1,20 +1,20 @@
-const breadCrumb = document.querySelector(".Breadcrumb");
 const nodes = document.querySelector(".Nodes");
+const breadCrumb = document.querySelector(".Breadcrumb");
+const dataCache = {};
 let currDir = [];
+let isLoadingContent = false;
 
-// todo: delete root goback btn
-// todo: loading screen, state
 
-function directFolder(item, goBack) {
+async function directFolder(item, goBack) {
   if (goBack) {
-    currDir = currDir.slice(0, -1);
+    currDir = currDir.slice(0, goBack);
   } else {
-    currDir.push({ id: item.id, name: item.name ? item.name : "root" });
-    console.log(currDir);
+    currDir.push({ id: item.id ? item.id : "-1", name: item.name ? item.name : "root" });
   }
-  console.log("DIRECTINGFOLDER WITH ", item, "goBack=", goBack);
-  paintBreadCrumb();
-  paintNodes(item ? item.id : null);
+
+  await paintBreadCrumb();
+  await paintNodes(item ? item.id : null);
+  return;
 }
 
 function addPrevIcon(parent) {
@@ -24,9 +24,8 @@ function addPrevIcon(parent) {
   prevIcon.src = "../assets/prev.png";
   prevDiv.appendChild(prevIcon);
   parent.appendChild(prevDiv);
-  console.log(currDir);
   prevDiv.addEventListener("click", () => {
-    directFolder(fetchDirectory(currDir[currDir.length - 2].id), true);
+    directFolder(fetchDirectory(currDir[currDir.length - 2].id), -1);
   });
 }
 
@@ -42,6 +41,11 @@ function resetFolder(parentNode) {
 async function fetchDirectory(nodeId) {
   const nodes = document.querySelector(".nodes");
   resetFolder(nodes);
+
+  if (dataCache[nodeId || "root"]){
+    return dataCache[nodeId || "root"];
+  };
+
   try {
     const response = await fetch(
       `https://l9817xtkq3.execute-api.ap-northeast-2.amazonaws.com/dev/${
@@ -52,19 +56,33 @@ async function fetchDirectory(nodeId) {
     if (!response.ok) {
       throw new Error("Server has error.");
     }
-    return response.json();
-  } catch (e) {
-    throw new Error(`Something went wrong! ${e.message}`);
+    const data = await response.json();
+    dataCache[nodeId || "root"] = data;
+    return data;
+
+  } catch (error) {
+    isLoading(false);
+    throw new Error(`Something went wrong! ${error.message}`);
+  }
+}
+
+function closeModal(event) {
+  if (event.target.parentNode.className !== "content") {
+    event.target.remove();
+    window.removeEventListener("click", closeModal);
   }
 }
 
 async function openImgModal(id, filePath) {
   const modal = document.createElement("div");
+  const modalContainer = document.createElement("div");
+  modalContainer.className = "content";
   modal.className = "Modal ImageViewer";
   const imgBox = document.createElement("img");
   imgBox.src = `https://fe-dev-matching-2021-03-serverlessdeploymentbuck-1ooef0cg8h3vq.s3.ap-northeast-2.amazonaws.com/public${filePath}
     `;
-  modal.appendChild(imgBox);
+  modalContainer.appendChild(imgBox);
+  modal.appendChild(modalContainer);
   nodes.appendChild(modal);
 
   window.addEventListener("keydown", (event) => {
@@ -72,61 +90,97 @@ async function openImgModal(id, filePath) {
       modal.remove();
     }
   });
-
   setTimeout(() => {
-    window.addEventListener("click", (event) => {
-      if (event.target.className !== "Modal ImageViewer") {
-        modal.remove();
-      }
-    });
+    window.addEventListener("click", closeModal);
   }, 0);
 }
 
-async function paintNodes(nodeId) {
-  const getContents = await fetchDirectory(nodeId ? nodeId : null);
-  getContents.map((item) => {
-    if (item.type == "DIRECTORY") {
-      const dirDiv = document.createElement("div");
-      dirDiv.className = "Node";
-      const dirIcon = document.createElement("img");
-      dirIcon.src = "../assets/directory.png";
-      const dirText = document.createElement("div");
-      dirText.innerHTML = item.name;
-      dirDiv.appendChild(dirIcon);
-      dirDiv.append(dirText);
-      dirDiv.addEventListener("click", () => directFolder(item));
-      nodes.appendChild(dirDiv);
-    } else if (item.type == "FILE") {
-      const fileDiv = document.createElement("div");
-      fileDiv.className = "Node";
-      const fileIcon = document.createElement("img");
-      fileIcon.src = "../assets/file.png";
-      const fileText = document.createElement("div");
-      fileText.innerHTML = item.name;
-      fileDiv.appendChild(fileIcon);
-      fileDiv.append(fileText);
-      fileDiv.addEventListener("click", () =>
-        openImgModal(item.id, item.filePath)
-      );
-      nodes.appendChild(fileDiv);
+function createNodeElement(item) {
+  const nodeDiv = document.createElement("div");
+  nodeDiv.className = "Node";
+  const nodeIcon = document.createElement("img");
+  nodeIcon.src = `../assets/${item.type.toLowerCase()}.png`;
+  const nodeText = document.createElement("div");
+  nodeText.innerHTML = item.name;
+  nodeDiv.appendChild(nodeIcon);
+  nodeDiv.append(nodeText);
+  nodes.appendChild(nodeDiv);
+
+  if (item.type === "DIRECTORY"){
+    nodeDiv.addEventListener("click", () => {if(!isLoadingContent) directFolder(item)});
+  } else if (item.type === "FILE") { 
+    nodeDiv.addEventListener("click", () =>{
+      if(!isLoadingContent) openImgModal(item.id, item.filePath)
     }
-  });
+      );
+  }
+  return nodeDiv;
 }
 
-function resetBreadCrumb() {
+async function isLoading(state){
+  isLoadingContent = state;
+  if (state == true){
+    const app = document.querySelector(".App");
+    const loadingModal = document.createElement("div");
+    const content = document.createElement("div");
+    const loadingImg = document.createElement("img");
+    loadingModal.className = "Modal Loading";
+    content.className = "content";
+    loadingImg.src = "../assets/nyan-cat.gif";
+    content.appendChild(loadingImg);
+    loadingModal.appendChild(content);
+    app.appendChild(loadingModal);
+  } else {
+    const loadingModal = document.querySelector(".Loading");
+    if (loadingModal !== null){
+      loadingModal.remove();
+    }
+  }
+}
+
+async function paintNodes(nodeId) {
+  await isLoading(true);
+  const getContents = await fetchDirectory(nodeId ? nodeId : null);
+  getContents.map((item) => {
+    createNodeElement(item);
+  });
+  await isLoading(false);
+}
+
+async function resetBreadCrumb() {
   while (breadCrumb.firstChild) {
     breadCrumb.removeChild(breadCrumb.firstChild);
   }
+  return;
+}
+async function handleBreadCrumbClick(event) {
+  if(isLoadingContent) return;
+  const clickedCrumbId = event.target.className;
+  if (clickedCrumbId == currDir[currDir.length -1].id){
+    return;
+  }
+  const item = currDir.find((item) => item.id === clickedCrumbId);
+  const indexInCrumb = currDir.findIndex((item) => item.id === clickedCrumbId);
+
+  await directFolder(item, -(currDir.length - indexInCrumb)+1);
+}
+
+function createBreadCrumbElement(id, name) {
+  
+  const dirDiv = document.createElement("div");
+  dirDiv.className = id;
+  dirDiv.innerHTML = name;
+  breadCrumb.appendChild(dirDiv);
+  dirDiv.addEventListener("click", handleBreadCrumbClick);
+  return dirDiv;
 }
 
 async function paintBreadCrumb() {
-  resetBreadCrumb();
+  await resetBreadCrumb();
   for (let i = 0; i < currDir.length; i++) {
-    const dirDiv = document.createElement("div");
-    dirDiv.innerHTML = currDir[i].name;
-    breadCrumb.appendChild(dirDiv);
+    createBreadCrumbElement(currDir[i].id, currDir[i].name);
   }
-}
+};
 
 window.onload = async () => {
   directFolder(await fetchDirectory(), false);
