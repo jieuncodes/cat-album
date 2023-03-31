@@ -114,24 +114,30 @@ export default function App($app) {
     onClick: handleNodesClick.bind(this),
     onBackClick: handleBackClick.bind(this),
   });
-    const imageView = new ImageView({
-        $app, 
-        initialState: this.state.selectedFilePath,
-        modalClose: () => {
-            this.setState({
-                ...this.state,selectedFilePath: null
-            })
-        }
-    }); 
+  const imageView = new ImageView({
+    $app,
+    initialState: this.state.selectedFilePath,
+    modalClose: () => {
+      this.setState({
+        ...this.state,
+        selectedFilePath: null,
+      });
+    },
+  });
 
-    // const loading = new Loading({});
-
+  const loading = new Loading({
+    $app,
+    initialState: this.state.isLoading,
+  });
 
   this.setState = (nextState) => {
     this.state = nextState;
     breadCrumb.setState(this.state.depth);
-    nodes.setState({ isRoot: this.state.isRoot, nodes: this.state.nodes });
+    nodes.setState({ 
+        isRoot: this.state.isRoot,
+        nodes: this.state.nodes });
     imageView.setState(this.state.selectedFilePath);
+    loading.setState(this.state.isLoading);
   };
 
   const init = async () => {
