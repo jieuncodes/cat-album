@@ -1,5 +1,5 @@
 export default function BreadCrumb({ $app, initialState = [], onClick }) {
-  console.log('BC this', this);
+  console.log("BC this", this);
   this.state = initialState;
   this.$target = document.createElement("nav");
   $app.appendChild(this.$target);

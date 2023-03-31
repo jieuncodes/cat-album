@@ -7,7 +7,6 @@ import { request } from "../api/api.js";
 const cache = {};
 
 export default function App($app) {
-  console.log("App this", this);
   this.state = {
     isRoot: false,
     nodes: [],
@@ -20,39 +19,104 @@ export default function App($app) {
     $app,
     initialState: [],
     onClick: (index) => {
-        console.log('cache', cache);
+      console.log("cache", cache);
       if (index === null) {
         this.setState({
           ...this.state,
           depth: [],
           isRoot: true,
-          nodes: cache.rootNodes
-        })
-        return
+          nodes: cache.rootNodes,
+        });
+        return;
       }
-  
+
       if (index === this.state.depth.length - 1) {
-        return
+        return;
       }
-  
-      const nextState = { ...this.state }
-      const nextDepth = this.state.depth.slice(0, index + 1)
-  
+
+      const nextState = { ...this.state };
+      const nextDepth = this.state.depth.slice(0, index + 1);
+
       this.setState({
         ...nextState,
         depth: nextDepth,
-        nodes: cache[nextDepth[nextDepth.length - 1].id]
-      })
-    }
+        nodes: cache[nextDepth[nextDepth.length - 1].id],
+      });
+    },
   });
 
-//   const nodes = new Nodes({});
+  const nodes = new Nodes({
+    $app,
+    initialState: [],
+    onClick: async (node) => {
+      try {
+        this.setState({
+          ...this.state,
+          isLoading: true,
+        });
+        if (node.type === "DICTIONARY") {
+          if (cache[node.id]) {
+            this.setState({
+              ...this.state,
+              depth: [...this.state.depth, node],
+              nodes: cache[node.id],
+              isLoading: false,
+            });
+            console.log("this.state", this.state);
+          } else {
+            const nextNodes = await request(node.id);
+            this.setState({
+              ...this.state,
+              isRoot: false,
+              depth: [...this.state.depth, node],
+              nodes: nextNodes,
+              isLaoding: false,
+            });
+          }
+        }
+      } catch {
+        console.log("ERROR!");
+      }
+    },
+    onBackClick: async () => {
+      try {
+        const nextState = { ...this.state };
+        nextState.depth.pop();
+
+        const prevNodeId =
+          nextState.depth.length === 0
+            ? null
+            : nextState.depth[nextState.depth.length - 1].id;
+
+        this.setState({
+          ...nextState,
+        });
+
+        if (prevNodeId === null) {
+          this.setState({
+            ...nextState,
+            isRoot: true,
+            nodes: cache.rootNodes,
+          });
+        } else {
+          this.setState({
+            ...nextState,
+            isRoot: false,
+            nodes: cache[prevNodeId],
+          });
+        }
+      } catch {
+        console.log("ERROR!");
+      }
+    },
+  });
   //   const imageView = new ImageView({});
   //   const loading = new Loading({});
 
   this.setState = (nextState) => {
     this.state = nextState;
     breadCrumb.setState(this.state.depth);
+    nodes.setState({ isRoot: this.state.isRoot, nodes: this.state.nodes });
   };
 
   const init = async () => {
@@ -64,7 +128,7 @@ export default function App($app) {
         isLoading: true,
       });
       const rootNodes = await request();
-    //   console.log("rootNodes", rootNodes);
+      //   console.log("rootNodes", rootNodes);
       this.setState({
         ...this.state,
         isRoot: true,
