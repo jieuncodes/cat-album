@@ -1,6 +1,5 @@
 export default function Nodes({ $app, initialState, onClick, onBackClick }) {
   this.state = initialState;
-  console.log(this.state);
   this.$target = document.createElement("ul");
   $app.appendChild(this.$target);
 
