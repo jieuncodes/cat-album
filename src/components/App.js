@@ -32,19 +32,16 @@ function handleBreadCrumbClick(index) {
 }
 
 async function handleNodesClick(node) {
-  console.log("curr CACHE", cache);
-  console.log('node', node);
   try {
     this.setState({
       ...this.state,
       isLoading: true,
     });
     if (node.type === "DIRECTORY") {
-      console.log("clicked DIRECTORY");
       if (cache[node.id]) {
-        console.log('setting state of this', this);
         this.setState({
           ...this.state,
+          // BreadCrumb 관련 처리를 이곳에서 함으로써 Nodes 컴포넌트는 BreadCrumb 컴포넌트를 몰라도된다
           depth: [...this.state.depth, node],
           nodes: cache[node.id],
           isLoading: false,
@@ -60,13 +57,13 @@ async function handleNodesClick(node) {
         });
         cache[node.id] = nextNodes;
       }
-    } else if(node.type==="FILE"){
-        this.setState({
-            ...this.state,
-            isRoot: false,
-            selectedFilePath: node.filePath,
-            isLoading:false,
-        })
+    } else if (node.type === "FILE") {
+      this.setState({
+        ...this.state,
+        isRoot: false,
+        selectedFilePath: node.filePath,
+        isLoading: false,
+      });
     }
   } catch {
     console.log("ERROR!");
@@ -123,6 +120,7 @@ export default function App($app) {
   const nodes = new Nodes({
     $app,
     initialState: [],
+    // onClick을 이곳에 정의함으로써 Node내에서는 click후 어떤 로직이 일어날지 알아야 할 필요가 없다.
     onClick: handleNodesClick.bind(this),
     onBackClick: handleBackClick.bind(this),
   });
@@ -161,11 +159,13 @@ export default function App($app) {
         isLoading: true,
       });
       const rootNodes = await request();
+
       this.setState({
         ...this.state,
         isRoot: true,
         nodes: rootNodes,
       });
+
       cache.rootNodes = rootNodes;
     } catch {
       console.log("ERROR!!");
