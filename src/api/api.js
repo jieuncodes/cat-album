@@ -3,7 +3,7 @@ const API_END_POINT =
 
 export const request = async (nodeId) => {
   try {
-    const res = await fetch(`${API_END_POINT}/${nodeId ? nodeId : ""}`);
+    const res = await fetch(`${API_END_POINT}${nodeId ? nodeId : ""}`);
     if (!res.ok) {
       throw new Error("서버의 상태가 이상합니다!");
     }

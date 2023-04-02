@@ -30,21 +30,25 @@ function handleBreadCrumbClick(index) {
     nodes: cache[nextDepth[nextDepth.length - 1].id],
   });
 }
+
 async function handleNodesClick(node) {
+  console.log("curr CACHE", cache);
+  console.log('node', node);
   try {
     this.setState({
       ...this.state,
       isLoading: true,
     });
-    if (node.type === "DICTIONARY") {
+    if (node.type === "DIRECTORY") {
+      console.log("clicked DIRECTORY");
       if (cache[node.id]) {
+        console.log('setting state of this', this);
         this.setState({
           ...this.state,
           depth: [...this.state.depth, node],
           nodes: cache[node.id],
           isLoading: false,
         });
-        console.log("this.state", this.state);
       } else {
         const nextNodes = await request(node.id);
         this.setState({
@@ -52,14 +56,23 @@ async function handleNodesClick(node) {
           isRoot: false,
           depth: [...this.state.depth, node],
           nodes: nextNodes,
-          isLaoding: false,
+          isLoading: false,
         });
+        cache[node.id] = nextNodes;
       }
+    } else if(node.type==="FILE"){
+        this.setState({
+            ...this.state,
+            isRoot: false,
+            selectedFilePath: node.filePath,
+            isLoading:false,
+        })
     }
   } catch {
     console.log("ERROR!");
   }
 }
+
 async function handleBackClick() {
   try {
     const nextState = { ...this.state };
@@ -100,7 +113,6 @@ export default function App($app) {
     selectedFilePath: null,
     isLoading: false,
   };
-  console.log("APP this", this);
 
   const breadCrumb = new BreadCrumb({
     $app,
@@ -133,15 +145,15 @@ export default function App($app) {
   this.setState = (nextState) => {
     this.state = nextState;
     breadCrumb.setState(this.state.depth);
-    nodes.setState({ 
-        isRoot: this.state.isRoot,
-        nodes: this.state.nodes });
+    nodes.setState({
+      isRoot: this.state.isRoot,
+      nodes: this.state.nodes,
+    });
     imageView.setState(this.state.selectedFilePath);
     loading.setState(this.state.isLoading);
   };
 
   const init = async () => {
-    console.log("INIT this", this);
     try {
       this.setState({
         ...this.state,
@@ -149,7 +161,6 @@ export default function App($app) {
         isLoading: true,
       });
       const rootNodes = await request();
-      //   console.log("rootNodes", rootNodes);
       this.setState({
         ...this.state,
         isRoot: true,
@@ -163,7 +174,6 @@ export default function App($app) {
         ...this.state,
         isLoading: false,
       });
-      console.log("FINALLY", this);
     }
   };
 

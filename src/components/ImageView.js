@@ -2,7 +2,6 @@ const IMAGE_PATH_PREFIX =
   "https://fe-dev-matching-2021-03-serverlessdeploymentbuck-1ooef0cg8h3vq.s3.ap-northeast-2.amazonaws.com/public";
 
 export default function ImageView({ $app, initialState, modalClose }) {
-  console.log("IMAGE VIEW this", this);
   this.state = initialState;
   this.$target = document.createElement("div");
   this.$target.className = "Modal ImageView";
@@ -19,7 +18,6 @@ export default function ImageView({ $app, initialState, modalClose }) {
   this.addModalCloseEvent = () => {
     this.$target.addEventListener("click", (e) => {
       const $node = e.target.closest(".content");
-      console.log("$node", $node);
 
       if (!$node) {
         this.modalClose();

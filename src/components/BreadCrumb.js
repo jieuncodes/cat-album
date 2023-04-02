@@ -1,5 +1,4 @@
 export default function BreadCrumb({ $app, initialState = [], onClick }) {
-  console.log("BC this", this);
   this.state = initialState;
   this.$target = document.createElement("nav");
   $app.appendChild(this.$target);
@@ -11,12 +10,12 @@ export default function BreadCrumb({ $app, initialState = [], onClick }) {
   this.onClick = onClick;
 
   this.render = () => {
-    this.$target.innerHTML = `<div class="nav-item">root</div>${this.state
+    this.$target.innerHTML = `<div class="Breadcrumb"><div class="nav-item">root</div>${this.state
       .map(
         (node, index) =>
-          `<div class="nave-item" data-index="${index}">${node.name}</div>`
+          `<div class="nav-item" data-index="${index}">${node.name}</div>`
       )
-      .join("")}`;
+      .join("")}</div>`;
   };
 
   this.$target.addEventListener("click", (e) => {

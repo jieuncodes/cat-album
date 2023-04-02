@@ -18,23 +18,7 @@ body {
     height: 600px;
 }
 
-.Nodes {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-}
 
-.Node {
-    width: 140px;
-    min-height: 150px;
-    padding: 12px;
-    margin: 8px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    word-break: keep-all;
-}
 
 .Breadcrumb {
     height: 62px;
@@ -54,6 +38,24 @@ body {
 
 .Breadcrumb>div:last-child::after {
     content: "";
+}
+
+.Nodes {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
+.Node {
+    width: 140px;
+    min-height: 150px;
+    padding: 12px;
+    margin: 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    word-break: keep-all;
 }
 
 .Modal {
